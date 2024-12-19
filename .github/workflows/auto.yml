@@ -9,6 +9,7 @@ env:
   PROJECT_ID: bo-stage
   GKE_CLUSTER: better-staging
   GKE_ZONE: asia-south1
+  VALUE_PATH: values.yaml
 
 jobs:
   deploy:
@@ -50,7 +51,7 @@ jobs:
 
     - name: Deploy RabbitMQ
       run: |
-        helm upgrade --install rabbitmq-test bitnami/rabbitmq -f values.yml --timeout 10m0s --wait --debug
+        helm upgrade --install rabbitmq-test bitnami/rabbitmq -f $VALUE_PATH --timeout 10m0s --wait --debug
 
     - name: Verify deployment
       run: |
