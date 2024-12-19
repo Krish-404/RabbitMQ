@@ -17,22 +17,23 @@ jobs:
     
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Setup Google Cloud CLI
-      uses: google-github-actions/setup-gcloud@v0.2.1
+      uses: google-github-actions/setup-gcloud@v1
       with:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        project_id: ${{ env.PROJECT_ID }}
+        install_components: 'gke-gcloud-auth-plugin'
 
     - name: Get GKE credentials
       run: |-
         gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE" --project "$PROJECT_ID"
-        
-    - name: Install gke-gcloud-auth-plugin
+      
+    - name: Configure kubectl
       run: |
-        gcloud components install gke-gcloud-auth-plugin
-        echo 'export USE_GKE_GCLOUD_AUTH_PLUGIN=True' >> $GITHUB_ENV
+        echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
+        kubectl config view --raw > ~/.kube/config
 
     - name: Install Helm
       run: |
@@ -45,9 +46,18 @@ jobs:
 
     - name: Deploy RabbitMQ
       run: |
-        helm upgrade --install rabbitmq-test bitnami/rabbitmq -f values.yml
+        helm upgrade --install rabbitmq-test bitnami/rabbitmq -f values.yml --timeout 10m0s --wait
 
     - name: Verify deployment
       run: |
         kubectl get pods -l app.kubernetes.io/name=rabbitmq
         kubectl logs $(kubectl get pods -l app.kubernetes.io/name=rabbitmq -o jsonpath="{.items[0].metadata.name}")
+
+    - name: Check RabbitMQ service
+      run: |
+        kubectl get services | grep rabbitmq
+        
+    - name: Print RabbitMQ admin credentials
+      run: |
+        echo "RabbitMQ admin username: $(kubectl get secret --namespace default rabbitmq-test -o jsonpath="{.data.rabbitmq-username}" | base64 --decode)"
+        echo "RabbitMQ admin password: $(kubectl get secret --namespace default rabbitmq-test -o jsonpath="{.data.rabbitmq-password}" | base64 --decode)"
