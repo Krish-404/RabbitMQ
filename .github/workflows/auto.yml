@@ -53,6 +53,27 @@ jobs:
       run: |
         helm upgrade --install rabbitmq-test bitnami/rabbitmq -f $VALUE_PATH
 
+    - name: Wait for RabbitMQ pod to be ready
+      run: |
+        echo "Waiting for RabbitMQ pod to be ready..."
+        timeout=300
+        start_time=$(date +%s)
+        while true; do
+          pod_status=$(kubectl get pods -l app.kubernetes.io/name=rabbitmq -o jsonpath='{.items[0].status.phase}')
+          if [ "$pod_status" = "Running" ]; then
+            echo "RabbitMQ pod is now running."
+            break
+          fi
+          current_time=$(date +%s)
+          elapsed=$((current_time - start_time))
+          if [ $elapsed -ge $timeout ]; then
+            echo "Timeout waiting for RabbitMQ pod to be ready."
+            exit 1
+          fi
+          echo "Waiting... (${elapsed}s elapsed)"
+          sleep 10
+        done
+
     - name: Check Pod Status
       run: |
         kubectl get pods -l app.kubernetes.io/name=rabbitmq -o wide
@@ -62,7 +83,6 @@ jobs:
     - name: Check RabbitMQ Logs
       run: |
         kubectl logs -l app.kubernetes.io/name=rabbitmq --all-containers --tail=100
-
     - name: Verify deployment
       run: |
         kubectl get pods -l app.kubernetes.io/name=rabbitmq
