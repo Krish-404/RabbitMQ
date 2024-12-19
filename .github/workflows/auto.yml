@@ -34,9 +34,10 @@ jobs:
       run: |-
         gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE" --project "$PROJECT_ID"
 
-    - name: Configure kubectl
+    - name: Verify kubectl configuration
       run: |
-        kubectl config view --raw > ~/.kube/config
+        kubectl config view
+        kubectl cluster-info
 
     - name: Install Helm
       run: |
@@ -49,7 +50,7 @@ jobs:
 
     - name: Deploy RabbitMQ
       run: |
-        helm upgrade --install rabbitmq-test bitnami/rabbitmq -f values.yml --timeout 10m0s --wait
+        helm upgrade --install rabbitmq-test bitnami/rabbitmq -f values.yml --timeout 10m0s --wait --debug
 
     - name: Verify deployment
       run: |
