@@ -1,4 +1,3 @@
-Copy code
 name: Deploy RabbitMQ to GKE
 
 on:
