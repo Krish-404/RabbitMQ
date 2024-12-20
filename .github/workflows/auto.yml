@@ -1,4 +1,4 @@
-name: Deploy RabbitMQ to GKE
+name: Deploy RabbitMQ to GKE 
 
 on:
   push:
